@@ -1,0 +1,197 @@
+/* ==========================================================================
+   VARIABLES.CSS — Design Tokens for Process Flow Diagram (PFD) UI
+   ==========================================================================
+   Central source of truth for all visual design tokens.
+   Organized by category for easy maintenance and theming.
+   
+   Usage:  Import this file FIRST in your stylesheet chain:
+           @import url('variables.css');
+   
+   Fonts:  Inter (body) — https://fonts.google.com/specimen/Inter
+           Outfit (headings) — https://fonts.google.com/specimen/Outfit
+   ========================================================================== */
+
+:root {
+
+  /* --------------------------------------------------------------------------
+     1. PRIMARY BRAND COLORS
+     --------------------------------------------------------------------------
+     Indigo-based primary palette used for interactive elements, selections,
+     focus rings, and accent highlights throughout the application.
+     -------------------------------------------------------------------------- */
+  --color-primary:        #6366f1;   /* Indigo 500 — default interactive color  */
+  --color-primary-light:  #818cf8;   /* Indigo 400 — hover / lighter variant    */
+  --color-primary-dark:   #4f46e5;   /* Indigo 600 — active / pressed state     */
+
+  /* --------------------------------------------------------------------------
+     2. SECONDARY & ACCENT COLORS
+     --------------------------------------------------------------------------
+     Secondary (emerald) for success-oriented actions; accent (amber) for
+     warnings, badges, and attention-drawing highlights.
+     -------------------------------------------------------------------------- */
+  --color-secondary:       #10b981;  /* Emerald 500 — positive actions          */
+  --color-secondary-light: #34d399;  /* Emerald 400 — hover variant             */
+  --color-accent:          #f59e0b;  /* Amber 500  — warnings / highlights      */
+  --color-accent-light:    #fbbf24;  /* Amber 400  — lighter variant            */
+
+  /* --------------------------------------------------------------------------
+     3. BACKGROUND COLORS
+     --------------------------------------------------------------------------
+     Dark-mode backgrounds ranging from the deepest blacks through semi-
+     transparent glass layers used in glassmorphism panels.
+     -------------------------------------------------------------------------- */
+  --color-bg-dark:    #0f172a;                  /* Slate 900 — main app bg      */
+  --color-bg-darker:  #020617;                  /* Slate 950 — deepest layer    */
+  --color-bg-card:    rgba(30, 41, 59, 0.8);    /* Slate 800 @ 80% — card bg   */
+  --color-bg-glass:   rgba(30, 41, 59, 0.4);    /* Slate 800 @ 40% — glass bg  */
+  --color-bg-hover:   rgba(51, 65, 85, 0.6);    /* Slate 600 @ 60% — hover bg  */
+  --color-bg-canvas:  #0f172a;                  /* Canvas / SVG background      */
+
+  /* --------------------------------------------------------------------------
+     4. TEXT COLORS
+     --------------------------------------------------------------------------
+     Three-tier text hierarchy: primary for body copy, secondary for labels
+     and captions, muted for placeholders and disabled states.
+     -------------------------------------------------------------------------- */
+  --color-text-primary:    #f1f5f9;  /* Slate 100 — high contrast body text     */
+  --color-text-secondary:  #94a3b8;  /* Slate 400 — labels & secondary info     */
+  --color-text-muted:      #64748b;  /* Slate 500 — placeholders / disabled     */
+
+  /* --------------------------------------------------------------------------
+     5. BORDER COLORS
+     --------------------------------------------------------------------------
+     Subtle translucent borders for glass panels; active variant adds an
+     indigo tint for focused / selected states.
+     -------------------------------------------------------------------------- */
+  --color-border:        rgba(148, 163, 184, 0.15);  /* Default border         */
+  --color-border-active: rgba(99, 102, 241, 0.5);    /* Focused / active       */
+
+  /* --------------------------------------------------------------------------
+     6. PIPE / FLOW STREAM COLORS
+     --------------------------------------------------------------------------
+     Distinct hues assigned to different fluid streams rendered as SVG
+     pipes on the PFD canvas. Each color maps to a specific medium.
+     -------------------------------------------------------------------------- */
+  --color-pipe-water:   #22d3ee;   /* Cyan 400   — water / coolant streams     */
+  --color-pipe-gas:     #a78bfa;   /* Violet 400 — gas-phase streams           */
+  --color-pipe-co2:     #fb923c;   /* Orange 400 — CO₂ / flue-gas streams     */
+  --color-pipe-stroke:  #475569;   /* Slate 600  — neutral / default pipe      */
+
+  /* --------------------------------------------------------------------------
+     7. COMPONENT COLORS
+     --------------------------------------------------------------------------
+     Each process component type gets a unique color for quick visual
+     identification on the canvas and in the palette sidebar.
+     -------------------------------------------------------------------------- */
+  --color-alga:              #22c55e;  /* Green 500  — algae reactor / bio      */
+  --color-alga-light:        #4ade80;  /* Green 400  — lighter variant          */
+  --color-alga-dark:         #15803d;  /* Green 700  — darker variant           */
+  --color-absorber:          #6366f1;  /* Indigo 500 — absorber column          */
+  --color-absorber-light:    #818cf8;  /* Indigo 400 — lighter variant          */
+  --color-gas-lean:          #38bdf8;  /* Sky 400    — lean gas stream          */
+  --color-gas-lean-dark:     #0284c7;  /* Sky 600    — darker variant           */
+  --color-gas-rich:          #f97316;  /* Orange 500 — rich gas stream          */
+  --color-gas-rich-dark:     #c2410c;  /* Orange 700 — darker variant           */
+  --color-pump:              #8b5cf6;  /* Violet 500 — pump / compressor        */
+  --color-heat-exchanger:    #ef4444;  /* Red 500    — heat exchanger           */
+  --color-valve:             #64748b;  /* Slate 500  — valve / control element  */
+  --color-instrument:        #fbbf24;  /* Amber 400  — instrument / sensor      */
+
+  /* --------------------------------------------------------------------------
+     8. SELECTION & STATUS COLORS
+     --------------------------------------------------------------------------
+     Semantic colors for user-selection highlight, and status feedback
+     (success, warning, error) used across toasts, badges, and borders.
+     -------------------------------------------------------------------------- */
+  --color-selected:  #6366f1;  /* Selection ring / glow — matches primary       */
+  --color-success:   #22c55e;  /* Green 500  — success / completed              */
+  --color-warning:   #f59e0b;  /* Amber 500  — warning / caution                */
+  --color-error:     #ef4444;  /* Red 500    — error / destructive               */
+
+  /* --------------------------------------------------------------------------
+     9. TYPOGRAPHY
+     --------------------------------------------------------------------------
+     Font families loaded from Google Fonts. Size scale follows a modular
+     ratio for consistent vertical rhythm.
+     -------------------------------------------------------------------------- */
+  --font-family-heading: 'Outfit', sans-serif;   /* Headings & brand text       */
+  --font-family-body:    'Inter', sans-serif;     /* Body, labels, UI chrome     */
+
+  --font-size-xs:   0.7rem;    /* 11.2px — micro labels, superscripts           */
+  --font-size-sm:   0.8rem;    /* 12.8px — captions, helper text                */
+  --font-size-md:   0.95rem;   /* 15.2px — default body text                    */
+  --font-size-lg:   1.15rem;   /* 18.4px — section titles, toolbar brand        */
+  --font-size-xl:   1.4rem;    /* 22.4px — panel headings                       */
+  --font-size-2xl:  1.8rem;    /* 28.8px — page titles (rarely used in PFD)     */
+
+  /* --------------------------------------------------------------------------
+     10. SPACING SCALE
+     --------------------------------------------------------------------------
+     Consistent spacing tokens based on a 4px baseline grid.
+     Use these for padding, margin, and gap values.
+     -------------------------------------------------------------------------- */
+  --spacing-xs:   4px;
+  --spacing-sm:   8px;
+  --spacing-md:   16px;
+  --spacing-lg:   24px;
+  --spacing-xl:   32px;
+  --spacing-2xl:  48px;
+
+  /* --------------------------------------------------------------------------
+     11. BORDER RADIUS
+     --------------------------------------------------------------------------
+     From sharp (sm) to fully rounded (pill).
+     -------------------------------------------------------------------------- */
+  --border-radius-sm:    4px;
+  --border-radius-md:    8px;
+  --border-radius-lg:    12px;
+  --border-radius-xl:    16px;
+  --border-radius-pill:  9999px;
+
+  /* --------------------------------------------------------------------------
+     12. BOX SHADOWS
+     --------------------------------------------------------------------------
+     Standard elevation shadows plus colored glow variants for
+     interactive highlights and status indicators.
+     -------------------------------------------------------------------------- */
+  --shadow-sm:            0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md:            0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg:            0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow-primary:  0 0 15px rgba(99, 102, 241, 0.3);
+  --shadow-glow-success:  0 0 15px rgba(34, 197, 94, 0.3);
+
+  /* --------------------------------------------------------------------------
+     13. LAYOUT DIMENSIONS
+     --------------------------------------------------------------------------
+     Fixed dimensions for structural UI elements. Sidebars, toolbar,
+     and the minimap overlay.
+     -------------------------------------------------------------------------- */
+  --sidebar-width:    260px;
+  --toolbar-height:   52px;
+  --minimap-width:    200px;
+  --minimap-height:   120px;
+
+  /* --------------------------------------------------------------------------
+     14. ANIMATION & TRANSITION
+     --------------------------------------------------------------------------
+     Duration presets and a default easing-based transition shorthand.
+     The cubic-bezier matches Material Design's standard easing curve.
+     -------------------------------------------------------------------------- */
+  --animation-speed-slow:    2s;
+  --animation-speed-normal:  0.8s;
+  --animation-speed-fast:    0.3s;
+  --transition-default:      all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --------------------------------------------------------------------------
+     15. Z-INDEX SCALE
+     --------------------------------------------------------------------------
+     Layered z-index system to avoid magic numbers. Canvas sits lowest;
+     tooltips and modals float above everything else.
+     -------------------------------------------------------------------------- */
+  --z-canvas:   1;
+  --z-sidebar:  10;
+  --z-minimap:  15;
+  --z-toolbar:  20;
+  --z-modal:    100;
+  --z-tooltip:  200;
+}

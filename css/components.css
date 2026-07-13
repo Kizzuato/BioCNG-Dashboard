@@ -1,0 +1,1003 @@
+/* ==========================================================================
+   COMPONENTS.CSS — UI Component Styles for PFD Application
+   ==========================================================================
+   Styles for every distinct UI component in the Process Flow Diagram app.
+   All values reference design tokens from variables.css.
+   Glassmorphism is achieved via backdrop-filter + semi-transparent backgrounds.
+
+   Table of Contents:
+     1.  Toolbar
+     2.  Sidebar (shared)
+     3.  Sidebar — Left (Palette)
+     4.  Sidebar — Right (Properties)
+     5.  Palette Items
+     6.  Properties Panel
+     7.  Minimap
+     8.  Canvas & PFD Components
+     9.  Buttons
+     10. Toast Notifications
+     11. Miscellaneous Utilities
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. TOOLBAR
+   ==========================================================================
+   Top-of-page toolbar spanning the full width. Uses glassmorphism with a
+   heavy blur and translucent background. Contains brand, controls, and
+   dividers laid out as a flex row.
+   ========================================================================== */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  height: var(--toolbar-height);
+  padding: 0 var(--spacing-md);
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--spacing-md);
+  user-select: none;
+}
+
+/* Brand section — left-aligned logo + title */
+.toolbar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-right: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+/* Application title — gradient text using heading font */
+.toolbar__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-secondary-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+/* Controls wrapper — pushes remaining items to fill available space */
+.toolbar__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Button group — logical grouping of related toolbar actions */
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* Individual toolbar button — square, icon-only, transparent base */
+.toolbar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-default);
+  font-size: var(--font-size-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.toolbar__btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.toolbar__btn:active {
+  transform: scale(0.95);
+}
+
+/* Active / toggled state (e.g., grid-on, snap-on) */
+.toolbar__btn--active {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--color-primary-light);
+}
+
+/* Zoom level text display */
+.toolbar__zoom-level {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Vertical divider between button groups */
+.toolbar__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--color-border);
+  margin: 0 var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+
+/* ==========================================================================
+   2. SIDEBAR (SHARED)
+   ==========================================================================
+   Base styles shared by both left and right sidebars. Glassmorphism panel
+   with vertical flex layout and scrollable content area.
+   ========================================================================== */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Left sidebar specific — right border */
+.sidebar--left {
+  border-right: 1px solid var(--color-border);
+}
+
+/* Right sidebar specific — left border */
+.sidebar--right {
+  border-left: 1px solid var(--color-border);
+}
+
+/* Sidebar header — title area */
+.sidebar__header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.sidebar__header h2 {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Scrollable content area */
+.sidebar__content {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+  gap: var(--spacing-md);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Collapsible section container */
+.sidebar__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Section header — clickable toggle */
+.sidebar__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: var(--transition-default);
+}
+
+.sidebar__section-header:hover {
+  color: var(--color-text-primary);
+}
+
+/* Chevron icon rotation for open/closed state */
+.sidebar__section-header .chevron {
+  transition: transform 0.25s ease;
+  font-size: 0.75rem;
+}
+
+.sidebar__section.collapsed .chevron {
+  transform: rotate(-90deg);
+}
+
+/* Hide section body when collapsed */
+.sidebar__section.collapsed .sidebar__section-body {
+  display: none;
+}
+
+/* Section body — vertical list of items */
+.sidebar__section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+
+/* ==========================================================================
+   3. SIDEBAR — LEFT (PALETTE)
+   ==========================================================================
+   Additional styles specific to the component palette in the left sidebar.
+   ========================================================================== */
+
+/* Search/filter input at top of palette */
+.palette-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-darker);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.palette-search__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+}
+
+.palette-search__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.palette-search__icon {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  flex-shrink: 0;
+}
+
+
+/* ==========================================================================
+   5. PALETTE ITEMS
+   ==========================================================================
+   Draggable component tiles in the left sidebar. Each item is a flex row
+   with an icon and label. Hover lifts the item with shadow and a subtle
+   border highlight.
+   ========================================================================== */
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 10px 12px;
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-card);
+  border: 1px solid transparent;
+  cursor: grab;
+  transition: var(--transition-default);
+}
+
+.palette-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(99, 102, 241, 0.3);
+  background: var(--color-bg-hover);
+}
+
+.palette-item:active {
+  cursor: grabbing;
+}
+
+/* Component icon (emoji or SVG inline) */
+.palette-item__icon {
+  font-size: 1.2rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Component label */
+.palette-item__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Visual feedback while dragging */
+.palette-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+  box-shadow: var(--shadow-lg);
+}
+
+
+/* ==========================================================================
+   6. PROPERTIES PANEL (Right Sidebar)
+   ==========================================================================
+   Form-like panel for editing properties of the currently selected
+   PFD component. Contains groups, rows, labels, and styled inputs.
+   ========================================================================== */
+
+/* Empty state when no component is selected */
+.properties-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2xl) var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-muted);
+  gap: var(--spacing-sm);
+}
+
+.properties-empty__icon {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+
+.properties-empty__text {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+/* Property group — logical cluster of related fields */
+.prop-group {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Group title — uppercase micro label */
+.prop-group__title {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-xs);
+  font-weight: 600;
+}
+
+/* Property row — label + input side by side */
+.prop-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Field label */
+.prop-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+/* Styled text / number / select input */
+.prop-input {
+  flex: 1;
+  background: var(--color-bg-darker);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
+  padding: 6px 10px;
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  width: 100%;
+  transition: var(--transition-default);
+  outline: none;
+}
+
+.prop-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.prop-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Select dropdown */
+.prop-input[type="select"],
+select.prop-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+/* Color picker input */
+.prop-input[type="color"] {
+  height: 32px;
+  padding: 2px;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Range slider — custom track and thumb */
+.prop-input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--color-bg-darker);
+  border-radius: var(--border-radius-pill);
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.prop-input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-bg-darker);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-default);
+}
+
+.prop-input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: var(--color-primary-light);
+}
+
+.prop-input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid var(--color-bg-darker);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Checkbox & toggle (styled as toggle switch) */
+.prop-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.prop-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.prop-toggle__slider {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg-darker);
+  border-radius: var(--border-radius-pill);
+  border: 1px solid var(--color-border);
+  transition: var(--transition-default);
+  cursor: pointer;
+}
+
+.prop-toggle__slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--color-text-muted);
+  border-radius: 50%;
+  transition: var(--transition-default);
+}
+
+.prop-toggle input:checked + .prop-toggle__slider {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.prop-toggle input:checked + .prop-toggle__slider::before {
+  transform: translateX(16px);
+  background: white;
+}
+
+
+/* ==========================================================================
+   7. MINIMAP
+   ==========================================================================
+   Small overview panel in the bottom-right corner of the canvas area.
+   Shows a scaled-down view of the full PFD with a viewport rectangle
+   indicating the current visible area.
+   ========================================================================== */
+
+.minimap {
+  position: absolute;
+  bottom: var(--spacing-md);
+  right: var(--spacing-md);
+  width: var(--minimap-width);
+  height: var(--minimap-height);
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  z-index: var(--z-minimap);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-default);
+}
+
+.minimap:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-border-active);
+}
+
+/* Scaled SVG rendering of the full PFD */
+.minimap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Viewport indicator rectangle — shows visible area */
+.minimap__viewport {
+  position: absolute;
+  border: 2px solid var(--color-primary);
+  border-radius: 2px;
+  pointer-events: none;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* Minimap header label (optional) */
+.minimap__label {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+
+/* ==========================================================================
+   8. CANVAS & PFD COMPONENTS
+   ==========================================================================
+   Main SVG canvas area and the interactive process components rendered
+   within it.
+   ========================================================================== */
+
+/* Canvas wrapper div */
+.canvas-container {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bg-canvas);
+  width: 100%;
+  height: 100%;
+}
+
+/* Main SVG element */
+.pfd-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Grid pattern — subtle background grid on the canvas */
+.canvas-grid line {
+  stroke: rgba(148, 163, 184, 0.06);
+  stroke-width: 1;
+}
+
+.canvas-grid line.major {
+  stroke: rgba(148, 163, 184, 0.12);
+  stroke-width: 1;
+}
+
+/* Individual PFD component (group element in SVG) */
+.pfd-component {
+  cursor: grab;
+  transition: filter 0.2s ease;
+}
+
+.pfd-component:hover {
+  filter: brightness(1.1);
+}
+
+/* Selected component — indigo glow */
+.pfd-component.selected {
+  filter: drop-shadow(0 0 6px var(--color-selected));
+}
+
+/* Component being dragged */
+.pfd-component.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+/* Connection port dots on components */
+.pfd-port {
+  fill: var(--color-text-muted);
+  stroke: var(--color-bg-dark);
+  stroke-width: 2;
+  cursor: crosshair;
+  transition: var(--transition-default);
+}
+
+.pfd-port:hover {
+  fill: var(--color-primary-light);
+  r: 6;
+}
+
+/* Component label text in SVG */
+.pfd-label {
+  font-family: var(--font-family-body);
+  font-size: 11px;
+  fill: var(--color-text-secondary);
+  pointer-events: none;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Pipe / connection path between components */
+.pfd-pipe {
+  fill: none;
+  stroke: var(--color-pipe-stroke);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pfd-pipe--water  { stroke: var(--color-pipe-water); }
+.pfd-pipe--gas    { stroke: var(--color-pipe-gas); }
+.pfd-pipe--co2    { stroke: var(--color-pipe-co2); }
+
+/* Animated dash overlay on pipes */
+.pfd-pipe__flow {
+  fill: none;
+  stroke-width: 3;
+  stroke-dasharray: 12 12;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+
+
+/* ==========================================================================
+   9. BUTTONS
+   ==========================================================================
+   Reusable button system with base styles and color variants.
+   ========================================================================== */
+
+/* Base button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-family: var(--font-family-body);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-default);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Primary button — indigo fill */
+.btn--primary {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.btn--primary:hover {
+  background: var(--color-primary-dark);
+  box-shadow: var(--shadow-glow-primary);
+}
+
+/* Secondary button — outline style */
+.btn--secondary {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.btn--secondary:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-active);
+}
+
+/* Danger button — red fill */
+.btn--danger {
+  background: var(--color-error);
+  color: #ffffff;
+}
+
+.btn--danger:hover {
+  background: #dc2626;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+/* Small button variant */
+.btn--sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+/* Icon-only button variant */
+.btn--icon {
+  padding: var(--spacing-sm);
+  width: 32px;
+  height: 32px;
+}
+
+
+/* ==========================================================================
+   10. TOAST NOTIFICATIONS
+   ==========================================================================
+   Stacked notification cards in the bottom-right corner. Slide in from
+   the right with a colored left border indicating severity.
+   ========================================================================== */
+
+/* Toast stack container */
+.toast-container {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  z-index: var(--z-tooltip);
+  pointer-events: none;
+}
+
+/* Individual toast card */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-width: 280px;
+  max-width: 400px;
+  background: var(--color-bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: slideInRight var(--animation-speed-fast) ease-out forwards;
+  border-left: 3px solid var(--color-text-muted);
+}
+
+/* Toast icon */
+.toast__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Toast message text */
+.toast__message {
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* Toast close button */
+.toast__close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  transition: var(--transition-default);
+  flex-shrink: 0;
+}
+
+.toast__close:hover {
+  color: var(--color-text-primary);
+}
+
+/* Success toast — green left border */
+.toast--success {
+  border-left-color: var(--color-success);
+}
+
+.toast--success .toast__icon {
+  color: var(--color-success);
+}
+
+/* Error toast — red left border */
+.toast--error {
+  border-left-color: var(--color-error);
+}
+
+.toast--error .toast__icon {
+  color: var(--color-error);
+}
+
+/* Info toast — blue/primary left border */
+.toast--info {
+  border-left-color: var(--color-primary-light);
+}
+
+.toast--info .toast__icon {
+  color: var(--color-primary-light);
+}
+
+/* Warning toast — amber left border */
+.toast--warning {
+  border-left-color: var(--color-warning);
+}
+
+.toast--warning .toast__icon {
+  color: var(--color-warning);
+}
+
+
+/* ==========================================================================
+   11. MISCELLANEOUS UTILITIES
+   ==========================================================================
+   Context menu, tooltip, modal overlay, and other shared UI patterns.
+   ========================================================================== */
+
+/* Context menu (right-click) */
+.context-menu {
+  position: fixed;
+  background: var(--color-bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-xs) 0;
+  z-index: var(--z-modal);
+  min-width: 180px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.context-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition-default);
+}
+
+.context-menu__item:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.context-menu__item--danger {
+  color: var(--color-error);
+}
+
+.context-menu__item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.context-menu__divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--spacing-xs) 0;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-md);
+  z-index: var(--z-tooltip);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* Modal backdrop overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Modal card */
+.modal {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-xl);
+  max-width: 480px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+  animation: fadeInUp var(--animation-speed-fast) ease-out;
+}
+
+.modal__title {
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+/* Status badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.badge--success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+}
+
+.badge--warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+.badge--error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+}

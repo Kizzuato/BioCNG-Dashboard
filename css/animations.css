@@ -1,0 +1,386 @@
+/* ==========================================================================
+   ANIMATIONS.CSS — Keyframes & Utility Classes for PFD UI
+   ==========================================================================
+   Contains all @keyframes definitions and corresponding utility classes
+   for animating process-flow elements (pipes, bubbles, pumps) and UI
+   transitions (fade, slide, shimmer).
+
+   Respects prefers-reduced-motion for accessibility.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   SECTION 1: FLOW / PIPE ANIMATIONS
+   ==========================================================================
+   Dashed-stroke animations that simulate fluid movement through SVG pipes.
+   The stroke-dasharray on the pipe element should be set to "12 12" (or
+   similar) for best visual results.
+   ========================================================================== */
+
+/* Forward flow — dash moves in the positive direction */
+@keyframes flowDash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Reverse flow — dash moves in the negative direction */
+@keyframes flowDashReverse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 24;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 2: LIQUID / WAVE ANIMATION
+   ==========================================================================
+   Horizontal oscillation to simulate liquid sloshing inside a vessel.
+   Apply to a wave-pattern SVG element.
+   ========================================================================== */
+
+@keyframes liquidWave {
+  0%   { transform: translateX(0); }
+  50%  { transform: translateX(-8px); }
+  100% { transform: translateX(0); }
+}
+
+
+/* ==========================================================================
+   SECTION 3: BUBBLE RISE ANIMATION
+   ==========================================================================
+   Simulates gas bubbles rising inside an absorber column or reactor.
+   Includes slight horizontal wobble and fade-out at the top.
+   ========================================================================== */
+
+@keyframes bubbleRise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translateY(-15px) translateX(2px);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-30px) translateX(-2px);
+    opacity: 0.5;
+  }
+  75% {
+    transform: translateY(-45px) translateX(1px);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-60px) translateX(0);
+    opacity: 0;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 4: PULSE / GLOW ANIMATION
+   ==========================================================================
+   Subtle scale + opacity pulse for selected or active components.
+   Gives a "breathing" feedback to the user.
+   ========================================================================== */
+
+@keyframes pulseGlow {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 5: PUMP ROTATION
+   ==========================================================================
+   Continuous 360° rotation for pump impeller SVG elements.
+   ========================================================================== */
+
+@keyframes pumpRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 6: UI TRANSITION — FADE IN
+   ==========================================================================
+   Simple opacity fade for elements entering the DOM.
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 7: UI TRANSITION — FADE IN + SLIDE UP
+   ==========================================================================
+   Combined opacity + vertical slide for toasts, panels, and overlays.
+   ========================================================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 8: UI TRANSITION — SLIDE IN FROM LEFT
+   ==========================================================================
+   Horizontal entrance from the left edge (e.g., sidebar appearing).
+   ========================================================================== */
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 9: UI TRANSITION — SLIDE IN FROM RIGHT
+   ==========================================================================
+   Horizontal entrance from the right edge.
+   ========================================================================== */
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 10: SHIMMER / SKELETON LOADING
+   ==========================================================================
+   Background-position shift that creates a loading-skeleton shimmer.
+   Element should have a linear-gradient background.
+   ========================================================================== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 11: HEAT GLOW
+   ==========================================================================
+   Opacity oscillation for heat-exchanger glow overlays,
+   simulating thermal radiation.
+   ========================================================================== */
+
+@keyframes heatGlow {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 12: GENTLE BOB
+   ==========================================================================
+   Subtle vertical bob for floating elements (e.g., minimap indicator,
+   drag handles, or floating action buttons).
+   ========================================================================== */
+
+@keyframes gentleBob {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 13: RIPPLE
+   ==========================================================================
+   Expanding circle ripple effect for click feedback on buttons and
+   interactive elements. The element should contain a pseudo-element or
+   child with this animation.
+   ========================================================================== */
+
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+
+/* ==========================================================================
+   SECTION 14: UTILITY CLASSES
+   ==========================================================================
+   Apply these classes directly to elements for quick animation binding.
+   Duration and iteration count are baked in for convenience.
+   ========================================================================== */
+
+/* Flow pipe — forward direction, infinite loop */
+.animate-flow {
+  animation: flowDash var(--animation-speed-slow) linear infinite;
+}
+
+/* Flow pipe — reverse direction, infinite loop */
+.animate-flow-reverse {
+  animation: flowDashReverse var(--animation-speed-slow) linear infinite;
+}
+
+/* Bubble rise — repeating, 3-second cycle */
+.animate-bubble {
+  animation: bubbleRise 3s ease-in-out infinite;
+}
+
+/* Pulse / glow — repeating, 2-second cycle */
+.animate-pulse {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Pump rotation — continuous, 2-second cycle */
+.animate-pump {
+  animation: pumpRotate var(--animation-speed-slow) linear infinite;
+}
+
+/* UI fade in — one-shot, fast */
+.animate-fade-in {
+  animation: fadeIn var(--animation-speed-fast) ease-out forwards;
+}
+
+/* UI fade in + slide up — one-shot */
+.animate-fade-in-up {
+  animation: fadeInUp var(--animation-speed-fast) ease-out forwards;
+}
+
+/* Sidebar / panel slide from left — one-shot */
+.animate-slide-in-left {
+  animation: slideInLeft var(--animation-speed-fast) ease-out forwards;
+}
+
+/* Sidebar / panel slide from right — one-shot */
+.animate-slide-in-right {
+  animation: slideInRight var(--animation-speed-fast) ease-out forwards;
+}
+
+/* Heat exchanger glow — repeating, 2-second cycle */
+.animate-heat {
+  animation: heatGlow 2s ease-in-out infinite;
+}
+
+/* Gentle floating bob — repeating, 3-second cycle */
+.animate-bob {
+  animation: gentleBob 3s ease-in-out infinite;
+}
+
+/* Shimmer / skeleton loading */
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-card) 25%,
+    var(--color-bg-hover) 50%,
+    var(--color-bg-card) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Liquid wave — repeating, 3-second cycle */
+.animate-liquid-wave {
+  animation: liquidWave 3s ease-in-out infinite;
+}
+
+
+/* ==========================================================================
+   SECTION 15: FLOW PAUSE STATE
+   ==========================================================================
+   When the user pauses simulation, all flow-related animations halt
+   gracefully via animation-play-state. Toggle `.flow-paused` on a
+   parent container (e.g., the canvas wrapper).
+   ========================================================================== */
+
+.flow-paused .animate-flow,
+.flow-paused .animate-flow-reverse,
+.flow-paused .animate-bubble,
+.flow-paused .animate-pump,
+.flow-paused .animate-liquid-wave {
+  animation-play-state: paused;
+}
+
+
+/* ==========================================================================
+   SECTION 16: REDUCED MOTION PREFERENCE
+   ==========================================================================
+   Respects the user's OS-level "reduce motion" setting for accessibility.
+   All animations are disabled globally. Transitions are shortened to
+   near-instant so UI still feels responsive.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,249 @@
+/* ==========================================================================
+   LAYOUT.CSS — Grid Layout & Global Reset for PFD Application
+   ==========================================================================
+   Defines the full-page CSS Grid structure, browser resets, responsive
+   breakpoints, and custom scrollbar theming.
+
+   Grid Structure:
+   ┌──────────────────────────────────────────────────────────┐
+   │                     TOOLBAR (full width)                 │
+   ├────────────┬───────────────────────┬─────────────────────┤
+   │            │                       │                     │
+   │  SIDEBAR   │       CANVAS          │   SIDEBAR           │
+   │  (left)    │   (SVG viewport)      │   (right)           │
+   │            │                       │                     │
+   └────────────┴───────────────────────┴─────────────────────┘
+
+   Import Order:
+     1. variables.css
+     2. layout.css       ← this file
+     3. components.css
+     4. animations.css
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. GLOBAL RESET
+   --------------------------------------------------------------------------
+   Normalize box-sizing and strip default margin/padding so every element
+   starts from a consistent baseline.
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. ROOT ELEMENT
+   --------------------------------------------------------------------------
+   Full-viewport height, hidden overflow to prevent body scroll (the canvas
+   handles its own pan/zoom). Sub-pixel font rendering for crisper text on
+   macOS / WebKit.
+   -------------------------------------------------------------------------- */
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family-body);
+  font-size: 16px;
+  line-height: 1.5;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. MAIN APPLICATION GRID
+   --------------------------------------------------------------------------
+   A 3-column × 2-row grid. The toolbar spans all columns in the first row.
+   Left sidebar, canvas, and right sidebar fill the second row.
+   -------------------------------------------------------------------------- */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr var(--sidebar-width);
+  grid-template-rows: var(--toolbar-height) 1fr;
+  grid-template-areas:
+    "toolbar       toolbar  toolbar"
+    "sidebar-left  canvas   sidebar-right";
+  height: 100vh;
+  width: 100vw;
+}
+
+
+/* --------------------------------------------------------------------------
+   4. GRID AREA ASSIGNMENTS
+   --------------------------------------------------------------------------
+   Each top-level child of .app is assigned to its named grid area with
+   an appropriate z-index from the design-token scale.
+   -------------------------------------------------------------------------- */
+
+/* Toolbar — spans full width, floats above sidebars */
+.app__toolbar {
+  grid-area: toolbar;
+  z-index: var(--z-toolbar);
+}
+
+/* Left sidebar — component palette */
+.app__sidebar-left {
+  grid-area: sidebar-left;
+  z-index: var(--z-sidebar);
+}
+
+/* Center canvas — SVG PFD viewport */
+.app__canvas {
+  grid-area: canvas;
+  z-index: var(--z-canvas);
+  position: relative;            /* anchor for minimap position: absolute   */
+}
+
+/* Right sidebar — properties inspector */
+.app__sidebar-right {
+  grid-area: sidebar-right;
+  z-index: var(--z-sidebar);
+}
+
+
+/* --------------------------------------------------------------------------
+   5. RESPONSIVE BREAKPOINTS
+   --------------------------------------------------------------------------
+   ≤ 1200px  →  Collapse right sidebar (slide off-screen)
+   ≤ 768px   →  Collapse both sidebars; canvas fills full width
+   
+   Sidebars use transform + transition so they can be toggled back
+   with a `.sidebar--visible` class via JavaScript.
+   -------------------------------------------------------------------------- */
+
+/* Medium screens — hide right sidebar */
+@media (max-width: 1200px) {
+  .app {
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-areas:
+      "toolbar       toolbar"
+      "sidebar-left  canvas";
+  }
+
+  .app__sidebar-right {
+    position: fixed;
+    top: var(--toolbar-height);
+    right: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Toggle class to reveal right sidebar on demand */
+  .app__sidebar-right.sidebar--visible {
+    transform: translateX(0);
+  }
+}
+
+/* Small screens — hide both sidebars */
+@media (max-width: 768px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "toolbar"
+      "canvas";
+  }
+
+  .app__sidebar-left {
+    position: fixed;
+    top: var(--toolbar-height);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .app__sidebar-left.sidebar--visible {
+    transform: translateX(0);
+  }
+
+  .app__sidebar-right {
+    position: fixed;
+    top: var(--toolbar-height);
+    right: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .app__sidebar-right.sidebar--visible {
+    transform: translateX(0);
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   6. CUSTOM SCROLLBAR (WebKit)
+   --------------------------------------------------------------------------
+   Thin, unobtrusive scrollbar that blends with the dark theme. Applies
+   globally to all scrollable containers.
+   -------------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #475569;         /* Slate 600 */
+  border-radius: var(--border-radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;         /* Slate 500 — slightly lighter on hover */
+}
+
+/* Firefox scrollbar (standardized) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 transparent;
+}
+
+
+/* --------------------------------------------------------------------------
+   7. TEXT SELECTION
+   --------------------------------------------------------------------------
+   Brand-colored selection highlight for a polished feel.
+   -------------------------------------------------------------------------- */
+
+::selection {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+
+/* --------------------------------------------------------------------------
+   8. HEADINGS (Global)
+   --------------------------------------------------------------------------
+   All headings default to the display / heading font family.
+   -------------------------------------------------------------------------- */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  line-height: 1.25;
+}
