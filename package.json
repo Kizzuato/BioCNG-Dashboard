@@ -5,15 +5,21 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start -p 3000 -H 0.0.0.0",
+    "start:rpi": "NODE_OPTIONS='--max-old-space-size=512' next start -p 3000 -H 0.0.0.0",
+    "lint": "next lint",
+    "server": "node src/app/server.js",
+    "server:rpi": "node src/app/server.js"
   },
   "dependencies": {
     "@rive-app/react-canvas": "^4.21.1",
-    "@rive-app/react-webgl2": "^4.21.4",
+    "express": "^4.19.2",
     "next": "15.3.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "serialport": "^12.0.0",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

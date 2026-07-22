@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRive, useViewModelInstanceNumber } from "@rive-app/react-canvas";
 
 // ── Sensor config ─────────────────────────────────────────────────────────────
@@ -13,37 +13,40 @@ const SENSORS = [
   { key: "pressure_B", label: "Pressure B",  min: 0, max: 5,   step: 0.1, unit: "bar"  },
 ];
 
-const HISTORY_LEN = 50;
-// Single accent color — muted slate-blue, senada dengan panel simulasi
+// History lebih pendek untuk hemat RAM di RPi
+const HISTORY_LEN = 30;
 const ACCENT = "#8892a4";
+const ACCENT_FILL = "rgba(136,146,164,0.55)";
 const ACCENT_DIM = "rgba(136,146,164,0.18)";
 
-// ── Mini Sparkline SVG ────────────────────────────────────────────────────────
-function Sparkline({ history, max }) {
-  const W = 200, H = 40;
-  if (history.length < 2) return (
+// ── Mini Sparkline SVG — dioptimasi (memoized) ────────────────────────────────
+const Sparkline = ({ history, max }) => {
+  const W = 160, H = 34;
+  const pts = useMemo(() => {
+    if (history.length < 2) return null;
+    return history.map((v, i) => {
+      const x = (i / (HISTORY_LEN - 1)) * W;
+      const y = H - Math.max(2, (v / (max || 1)) * (H - 4));
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+  }, [history, max]);
+
+  if (!pts) return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: "block" }}>
       <line x1="0" y1={H / 2} x2={W} y2={H / 2} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
     </svg>
   );
 
-  const pts = history.map((v, i) => {
-    const x = (i / (HISTORY_LEN - 1)) * W;
-    const y = H - Math.max(2, (v / (max || 1)) * (H - 4));
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-
   const lastIdx = history.length - 1;
   const lastX = (lastIdx / (HISTORY_LEN - 1)) * W;
   const lastY = H - Math.max(2, (history[lastIdx] / (max || 1)) * (H - 4));
-
   const areaPath = `M 0,${H} L ${pts.join(" L ")} L ${(lastIdx / (HISTORY_LEN - 1)) * W},${H} Z`;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: "block", overflow: "visible" }}>
       <defs>
         <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor={ACCENT} stopOpacity="0.22" />
+          <stop offset="0%"   stopColor={ACCENT} stopOpacity="0.20" />
           <stop offset="100%" stopColor={ACCENT} stopOpacity="0.01" />
         </linearGradient>
       </defs>
@@ -60,19 +63,21 @@ function Sparkline({ history, max }) {
       <circle cx={lastX} cy={lastY} r="2.5" fill={ACCENT} opacity="0.9" />
     </svg>
   );
-}
+};
 
-// ── Parameter Card (horizontal) ───────────────────────────────────────────────
-function ParamCard({ sensor, value, history }) {
-  const pct = Math.min(100, Math.max(0, (value / sensor.max) * 100));
-  const prev  = history.length >= 2 ? history[history.length - 2] : value;
-  const delta = value - prev;
+// ── Parameter Card — TANPA backdropFilter (berat di RPi GPU) ─────────────────
+const ParamCard = ({ sensor, value, history }) => {
+  const pct = useMemo(() =>
+    Math.min(100, Math.max(0, (value / sensor.max) * 100)),
+    [value, sensor.max]
+  );
+  const prev      = history.length >= 2 ? history[history.length - 2] : value;
+  const delta     = value - prev;
   const trendUp   = delta >  0.01;
   const trendDown = delta < -0.01;
 
   return (
     <div style={cardStyles.card}>
-      {/* Label + trend */}
       <div style={cardStyles.header}>
         <span style={cardStyles.label}>{sensor.label.toUpperCase()}</span>
         <span style={{
@@ -83,7 +88,6 @@ function ParamCard({ sensor, value, history }) {
         </span>
       </div>
 
-      {/* Value */}
       <div style={cardStyles.valueRow}>
         <span style={cardStyles.value}>
           {value.toFixed(sensor.step < 1 ? 1 : 0)}
@@ -91,18 +95,16 @@ function ParamCard({ sensor, value, history }) {
         <span style={cardStyles.unit}>{sensor.unit}</span>
       </div>
 
-      {/* Sparkline */}
       <div style={cardStyles.chartWrap}>
         <Sparkline history={history} max={sensor.max} />
       </div>
 
-      {/* Progress bar */}
       <div style={cardStyles.barBg}>
         <div style={{ ...cardStyles.barFill, width: `${pct}%` }} />
       </div>
     </div>
   );
-}
+};
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Home() {
@@ -112,6 +114,8 @@ export default function Home() {
     stateMachines: "State Machine 1",
     autoBind: true,
     autoplay: true,
+    // Gunakan canvas renderer yang lebih ringan (default)
+    useDevicePixelRatio: false, // Matikan DPR scaling — hemat GPU di RPi
   });
 
   const [vmReady,       setVmReady]       = useState(false);
@@ -133,23 +137,27 @@ export default function Home() {
   const portRef        = useRef(null);
   const simIntervalRef = useRef(null);
   const settersRef     = useRef({});
+  // Batch update: kumpulkan perubahan history agar tidak re-render tiap tick
+  const pendingHistoryRef = useRef(null);
 
   useEffect(() => {
     if (rive?.viewModelInstance) setVmReady(true);
   }, [rive]);
 
-  const { setValue: setLpmWater  } = useViewModelInstanceNumber("LPM_WATER",        vmReady ? rive.viewModelInstance : null);
-  const { setValue: setLpmGas    } = useViewModelInstanceNumber("LPM_GAS",          vmReady ? rive.viewModelInstance : null);
-  const { setValue: setPureGas   } = useViewModelInstanceNumber("Progress_puregas", vmReady ? rive.viewModelInstance : null);
-  const { setValue: setRawGas    } = useViewModelInstanceNumber("Progress_rawgas",  vmReady ? rive.viewModelInstance : null);
-  const { setValue: setPressureA } = useViewModelInstanceNumber("PRESSURE_A",       vmReady ? rive.viewModelInstance : null);
-  const { setValue: setPressureB } = useViewModelInstanceNumber("PRESSURE_B",       vmReady ? rive.viewModelInstance : null);
+  const vmInst = vmReady ? rive.viewModelInstance : null;
+  const { setValue: setLpmWater  } = useViewModelInstanceNumber("LPM_WATER",        vmInst);
+  const { setValue: setLpmGas    } = useViewModelInstanceNumber("LPM_GAS",          vmInst);
+  const { setValue: setPureGas   } = useViewModelInstanceNumber("Progress_puregas", vmInst);
+  const { setValue: setRawGas    } = useViewModelInstanceNumber("Progress_rawgas",  vmInst);
+  const { setValue: setPressureA } = useViewModelInstanceNumber("PRESSURE_A",       vmInst);
+  const { setValue: setPressureB } = useViewModelInstanceNumber("PRESSURE_B",       vmInst);
 
   useEffect(() => {
     settersRef.current = { setLpmWater, setLpmGas, setPureGas, setRawGas, setPressureA, setPressureB };
   }, [setLpmWater, setLpmGas, setPureGas, setRawGas, setPressureA, setPressureB]);
 
-  const applyData = useCallback((vals) => {
+  // Update Rive langsung tanpa React state (lebih cepat)
+  const applyRive = useCallback((vals) => {
     const { setLpmWater, setLpmGas, setPureGas, setRawGas, setPressureA, setPressureB } = settersRef.current;
     setLpmWater?.(vals.lpmWater);
     setLpmGas?.(vals.lpmGas);
@@ -157,108 +165,100 @@ export default function Home() {
     setRawGas?.(vals.rawGas);
     setPressureA?.(vals.pressure_A);
     setPressureB?.(vals.pressure_B);
+  }, []);
+
+  const applyData = useCallback((vals) => {
+    applyRive(vals);
     setSensorData({ ...vals });
-    setHistory(prev => {
-      const next = { ...prev };
-      SENSORS.forEach(s => {
-        const arr = [...(prev[s.key] || []), vals[s.key]];
-        next[s.key] = arr.length > HISTORY_LEN ? arr.slice(arr.length - HISTORY_LEN) : arr;
+    // Simpan ke ref dulu, flush ke state setiap 2 detik (kurangi re-render)
+    pendingHistoryRef.current = vals;
+  }, [applyRive]);
+
+  // Flush history ke state setiap 2 detik agar card tidak re-render tiap tick
+  useEffect(() => {
+    const flush = setInterval(() => {
+      const vals = pendingHistoryRef.current;
+      if (!vals) return;
+      pendingHistoryRef.current = null;
+      setHistory(prev => {
+        const next = { ...prev };
+        SENSORS.forEach(s => {
+          const arr = [...(prev[s.key] || []), vals[s.key]];
+          next[s.key] = arr.length > HISTORY_LEN ? arr.slice(arr.length - HISTORY_LEN) : arr;
+        });
+        return next;
       });
-      return next;
-    });
+    }, 2000);
+    return () => clearInterval(flush);
   }, []);
 
   // ── Realistic BioCNG simulation ──────────────────────────────────────────
-  // Clamp helper
-  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const clamp = useCallback((v, lo, hi) => Math.min(hi, Math.max(lo, v)), []);
+  const walk  = useCallback((cur, target, speed, noise) =>
+    cur + (target - cur) * speed + (Math.random() - 0.5) * noise, []);
 
-  // Smooth random walk: drift toward a target with small noise
-  const walk = (cur, target, speed, noise) =>
-    cur + (target - cur) * speed + (Math.random() - 0.5) * noise;
-
-  // Ref to keep the previous state inside the interval without stale closure
   const simStateRef = useRef({
-    lpmGas:     12,
-    lpmWater:   19,
-    rawGas:     63,
-    pureGas:    93,
-    pressure_A: 3.1,
-    pressure_B: 2.6,
-    // slow-moving "targets" so the system wanders naturally
-    gasTarget:  12,
+    lpmGas: 12, lpmWater: 19, rawGas: 63, pureGas: 93,
+    pressure_A: 3.1, pressure_B: 2.6, gasTarget: 12,
   });
 
   const tickRealistic = useCallback(() => {
     const s = simStateRef.current;
-
-    // 1. Gas flow drifts slowly around a wandering target (8–17 L/m)
-    s.gasTarget = clamp(
-      walk(s.gasTarget, 12, 0.04, 1.2),
-      8, 17
-    );
+    s.gasTarget = clamp(walk(s.gasTarget, 12, 0.04, 1.2), 8, 17);
     const lpmGas = clamp(walk(s.lpmGas, s.gasTarget, 0.18, 0.4), 6, 18);
-
-    // 2. Water flow tracks ≈1.6× gas flow (operator keeps ratio for scrubbing)
     const waterTarget = lpmGas * 1.65 + (Math.random() - 0.5) * 0.6;
     const lpmWater = clamp(walk(s.lpmWater, waterTarget, 0.15, 0.35), 5, 28);
-
-    // 3. Raw biogas CH₄ content — relatively stable, ~55–70%
     const rawGas = clamp(walk(s.rawGas, 63, 0.05, 0.8), 54, 71);
-
-    // 4. Scrubbing efficiency drives pure-gas purity
-    //    Efficiency rises with water/gas ratio (ideal ≥ 1.5)
     const ratio = lpmWater / Math.max(lpmGas, 0.1);
-    const efficiency = clamp((ratio - 0.8) / 1.4, 0, 1);   // 0→1 over ratio 0.8–2.2
-    const pureTarget = 84 + efficiency * 14;                 // 84–98%
+    const efficiency = clamp((ratio - 0.8) / 1.4, 0, 1);
+    const pureTarget = 84 + efficiency * 14;
     const pureGas = clamp(walk(s.pureGas, pureTarget, 0.12, 0.5), 80, 98);
-
-    // 5. Pressure A (pump) rises with gas flow rate
     const pATarget = 1.8 + lpmGas * 0.11;
     const pressure_A = clamp(walk(s.pressure_A, pATarget, 0.14, 0.06), 1.5, 5.0);
-
-    // 6. Pressure B (scrubber outlet) ≈ 85–90% of pump pressure
     const pBTarget = pressure_A * 0.87 - 0.05;
     const pressure_B = clamp(walk(s.pressure_B, pBTarget, 0.14, 0.05), 1.2, 4.5);
-
-    // Save state
     Object.assign(s, { lpmGas, lpmWater, rawGas, pureGas, pressure_A, pressure_B });
-
     const vals = { lpmGas, lpmWater, rawGas, pureGas, pressure_A, pressure_B };
     setSimValues(vals);
     applyData(vals);
-  }, [applyData]);
+  }, [applyData, clamp, walk]);
 
-  const handleStartSim = () => {
+  const handleStartSim = useCallback(() => {
     if (!vmReady) { alert("Animasi Rive belum siap. Tunggu sebentar lalu coba lagi."); return; }
     setIsSimulating(true);
     if (simMode === "auto") {
-      simIntervalRef.current = setInterval(tickRealistic, 600);
+      // 1000ms cukup untuk display — setengah lebih hemat CPU dari 600ms
+      simIntervalRef.current = setInterval(tickRealistic, 1000);
     } else {
       applyData(simValues);
     }
-  };
+  }, [vmReady, simMode, tickRealistic, applyData, simValues]);
 
-  const handleStopSim = () => {
+  const handleStopSim = useCallback(() => {
     clearInterval(simIntervalRef.current);
     simIntervalRef.current = null;
     setIsSimulating(false);
-  };
+  }, []);
 
-  const handleSliderChange = (key, value) => {
+  const handleSliderChange = useCallback((key, value) => {
     const next = { ...simValues, [key]: +value };
     setSimValues(next);
     if (isSimulating && simMode === "manual") applyData(next);
-  };
+  }, [simValues, isSimulating, simMode, applyData]);
 
-  const handleModeChange = (mode) => {
+  const handleModeChange = useCallback((mode) => {
     if (isSimulating) handleStopSim();
     setSimMode(mode);
-  };
+  }, [isSimulating, handleStopSim]);
 
   useEffect(() => { return () => clearInterval(simIntervalRef.current); }, []);
 
-  const handleConnect = async () => {
-    if (!("serial" in navigator)) { alert("Browser Anda tidak mendukung Web Serial API. Gunakan Chrome atau Edge."); return; }
+  // ── Web Serial ─────────────────────────────────────────────────────────────
+  const handleConnect = useCallback(async () => {
+    if (!("serial" in navigator)) {
+      alert("Browser Anda tidak mendukung Web Serial API.\nGunakan Chrome atau Chromium.");
+      return;
+    }
     try {
       const port = await navigator.serial.requestPort();
       portRef.current = port;
@@ -266,7 +266,7 @@ export default function Home() {
       setIsConnected(true);
       readFromPort(port);
     } catch (error) { console.error("Gagal menghubungkan ke serial port:", error); }
-  };
+  }, []);
 
   const readFromPort = async (port) => {
     let lineBuffer = "";
@@ -293,11 +293,31 @@ export default function Home() {
     finally { reader.releaseLock(); }
   };
 
-  const handleDisconnect = async () => {
-    if (readerRef.current) { await readerRef.current.cancel(); readerRef.current.releaseLock(); readerRef.current = null; }
-    if (portRef.current)   { await portRef.current.close();   portRef.current = null; }
+  const handleDisconnect = useCallback(async () => {
+    if (readerRef.current) {
+      try { await readerRef.current.cancel(); } catch {}
+      try { readerRef.current.releaseLock(); } catch {}
+      readerRef.current = null;
+    }
+    if (portRef.current) {
+      try { await portRef.current.close(); } catch {}
+      portRef.current = null;
+    }
     setIsConnected(false);
-  };
+  }, []);
+
+  // ── Memoized sensor cards agar tidak re-render semua saat satu berubah ──
+  const sensorCards = useMemo(() =>
+    SENSORS.map(s => (
+      <ParamCard
+        key={s.key}
+        sensor={s}
+        value={sensorData[s.key]}
+        history={history[s.key] || []}
+      />
+    )),
+    [sensorData, history]
+  );
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#313131", position: "relative", overflow: "hidden" }} suppressHydrationWarning={true}>
@@ -305,14 +325,7 @@ export default function Home() {
 
       {/* ── Parameter Cards — horizontal top bar ─────────────────────────── */}
       <div style={topBarStyles.wrapper}>
-        {SENSORS.map(s => (
-          <ParamCard
-            key={s.key}
-            sensor={s}
-            value={sensorData[s.key]}
-            history={history[s.key] || []}
-          />
-        ))}
+        {sensorCards}
       </div>
 
       {/* ── Simulation Panel ─────────────────────────────────────────────── */}
@@ -394,13 +407,12 @@ const topBarStyles = {
   },
 };
 
-// ── Card Styles ───────────────────────────────────────────────────────────────
+// ── Card Styles — TANPA backdropFilter untuk performa RPi ─────────────────────
 const cardStyles = {
   card: {
-    width: "150px",
-    background: "rgba(27, 27, 27, 0.78)",
-    backdropFilter: "blur(14px)",
-    WebkitBackdropFilter: "blur(14px)",
+    width: "148px",
+    // Solid dark bg sebagai pengganti blur — tidak butuh GPU compositing
+    background: "rgba(22, 22, 26, 0.92)",
     border: "1px solid rgba(255,255,255,0.07)",
     borderRadius: "8px",
     padding: "10px 11px 8px",
@@ -408,6 +420,8 @@ const cardStyles = {
     flexDirection: "column",
     gap: "5px",
     fontFamily: "'Inter', 'Geist', sans-serif",
+    // Akan-render sebagai CSS contain untuk mengurangi layout thrash
+    contain: "layout style",
   },
   header: {
     display: "flex",
@@ -423,7 +437,7 @@ const cardStyles = {
   trend: {
     fontSize: "8px",
     fontWeight: "700",
-    transition: "color 0.4s",
+    transition: "color 0.3s",
   },
   valueRow: {
     display: "flex",
@@ -445,7 +459,7 @@ const cardStyles = {
     color: "#4a5060",
   },
   chartWrap: {
-    height: "40px",
+    height: "34px",
     margin: "0 -2px",
     overflow: "hidden",
   },
@@ -459,8 +473,9 @@ const cardStyles = {
     height: "100%",
     borderRadius: "99px",
     background: ACCENT_DIM,
-    backgroundImage: `linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT})`,
-    transition: "width 0.7s cubic-bezier(0.4,0,0.2,1)",
+    backgroundImage: `linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT_FILL})`,
+    transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+    willChange: "width",
   },
 };
 
