@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRive, useViewModelInstanceNumber } from "@rive-app/react-canvas";
+import { io } from "socket.io-client";
 
 // ── Sensor config ─────────────────────────────────────────────────────────────
 const SENSORS = [
@@ -18,6 +19,50 @@ const HISTORY_LEN = 30;
 const ACCENT = "#8892a4";
 const ACCENT_FILL = "rgba(136,146,164,0.55)";
 const ACCENT_DIM = "rgba(136,146,164,0.18)";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || null;
+const SENSOR_KEYS = SENSORS.map((sensor) => sensor.key);
+const INITIAL_SENSOR_DATA = {
+  lpmWater: 0,
+  lpmGas: 0,
+  pureGas: 0,
+  rawGas: 0,
+  pressure_A: 0,
+  pressure_B: 0,
+};
+
+function getSocketUrl() {
+  if (SOCKET_URL) return SOCKET_URL;
+  if (typeof window === "undefined") return "http://localhost:3001";
+  return window.location.protocol + "//" + window.location.hostname + ":3001";
+}
+
+function toSensorNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const match = value.replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+    if (match) {
+      const parsed = Number(match[0]);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
+function normalizeIncomingData(rawData, previousData) {
+  if (!rawData || typeof rawData !== "object" || Array.isArray(rawData)) return null;
+
+  const next = { ...previousData };
+  let hasValue = false;
+  for (const key of SENSOR_KEYS) {
+    const value = toSensorNumber(rawData[key]);
+    if (value !== null) {
+      next[key] = value;
+      hasValue = true;
+    }
+  }
+
+  return hasValue ? next : null;
+}
 
 // ── Mini Sparkline SVG — dioptimasi (memoized) ────────────────────────────────
 const Sparkline = ({ history, max }) => {
@@ -126,9 +171,7 @@ export default function Home() {
   const [simValues,     setSimValues]     = useState({
     lpmWater: 10, lpmGas: 5, pureGas: 50, rawGas: 50, pressure_A: 2, pressure_B: 2,
   });
-  const [sensorData,    setSensorData]    = useState({
-    lpmWater: 0, lpmGas: 0, pureGas: 0, rawGas: 0, pressure_A: 0, pressure_B: 0,
-  });
+  const [sensorData,    setSensorData]    = useState(INITIAL_SENSOR_DATA);
   const [history, setHistory] = useState({
     lpmWater: [], lpmGas: [], pureGas: [], rawGas: [], pressure_A: [], pressure_B: [],
   });
@@ -136,13 +179,24 @@ export default function Home() {
   const readerRef      = useRef(null);
   const portRef        = useRef(null);
   const simIntervalRef = useRef(null);
+  const socketRef      = useRef(null);
   const settersRef     = useRef({});
   // Batch update: kumpulkan perubahan history agar tidak re-render tiap tick
   const pendingHistoryRef = useRef(null);
+  const latestDataRef = useRef(INITIAL_SENSOR_DATA);
 
   useEffect(() => {
     if (rive?.viewModelInstance) setVmReady(true);
   }, [rive]);
+
+  // ── Auto-start simulasi begitu Rive siap ─────────────────────────────────
+  useEffect(() => {
+    if (!vmReady) return;
+    if (simIntervalRef.current) return; // cegah double-start
+    simIntervalRef.current = setInterval(tickRealistic, 1000);
+    setIsSimulating(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vmReady]);
 
   const vmInst = vmReady ? rive.viewModelInstance : null;
   const { setValue: setLpmWater  } = useViewModelInstanceNumber("LPM_WATER",        vmInst);
@@ -168,11 +222,56 @@ export default function Home() {
   }, []);
 
   const applyData = useCallback((vals) => {
+    latestDataRef.current = vals;
     applyRive(vals);
     setSensorData({ ...vals });
     // Simpan ke ref dulu, flush ke state setiap 2 detik (kurangi re-render)
     pendingHistoryRef.current = vals;
   }, [applyRive]);
+
+  useEffect(() => {
+    const socket = io(getSocketUrl(), {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setIsConnected(true);
+    });
+
+    socket.on("disconnect", () => {
+      setIsConnected(false);
+    });
+
+    socket.on("serialdata", (rawData) => {
+      const nextData = normalizeIncomingData(rawData, latestDataRef.current);
+      if (!nextData) return;
+
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
+      }
+      setIsSimulating(false);
+      applyData(nextData);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.warn("Socket.IO serial bridge belum terhubung:", error.message);
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("serialdata");
+      socket.off("connect_error");
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [applyData]);
 
   // Flush history ke state setiap 2 detik agar card tidak re-render tiap tick
   useEffect(() => {
@@ -262,7 +361,7 @@ export default function Home() {
     try {
       const port = await navigator.serial.requestPort();
       portRef.current = port;
-      await port.open({ baudRate: 9600 });
+      await port.open({ baudRate: 115200 });
       setIsConnected(true);
       readFromPort(port);
     } catch (error) { console.error("Gagal menghubungkan ke serial port:", error); }
@@ -328,8 +427,8 @@ export default function Home() {
         {sensorCards}
       </div>
 
-      {/* ── Simulation Panel ─────────────────────────────────────────────── */}
-      <div style={panelStyles.wrapper}>
+      {/* Panel simulasi disembunyikan — simulasi berjalan otomatis */}
+      {false && <div style={panelStyles.wrapper}>
         <div style={panelStyles.header}>
           <button
             onClick={isConnected ? handleDisconnect : handleConnect}
@@ -387,7 +486,7 @@ export default function Home() {
             </button>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

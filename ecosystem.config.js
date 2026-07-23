@@ -36,7 +36,7 @@ module.exports = {
         // Arduino via USB-Serial  → /dev/ttyUSB0
         // Arduino Uno/Mega via USB → /dev/ttyACM0
         SERIAL_PORT: "/dev/ttyUSB0",
-        BAUD_RATE: "9600",
+        BAUD_RATE: "115200",
       },
       restart_delay: 5000,
       max_restarts: 5,

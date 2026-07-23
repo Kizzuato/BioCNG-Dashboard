@@ -23,11 +23,89 @@ const io = new Server(server, {
 // Biasanya: /dev/ttyUSB0 (USB Serial) atau /dev/ttyACM0 (Arduino via USB)
 // Cek dengan perintah: ls /dev/tty*
 const PORT_NAME = process.env.SERIAL_PORT || "/dev/ttyUSB0";
-const BAUD_RATE = parseInt(process.env.BAUD_RATE || "9600");
+const BAUD_RATE = parseInt(process.env.BAUD_RATE || "115200", 10);
 
 let port = null;
 let parser = null;
 let lastData = null;
+
+const DEFAULT_SENSOR_DATA = {
+  lpmWater: 0,
+  lpmGas: 0,
+  pureGas: 0,
+  rawGas: 0,
+  pressure_A: 0,
+  pressure_B: 0,
+};
+
+const SENSOR_ALIASES = {
+  lpmWater: ["lpmWater", "LPM_WATER", "flowWater", "waterFlow", "flow_rate", "flowRate", "debitAir", "debit", "water", "lpm"],
+  lpmGas: ["lpmGas", "LPM_GAS", "flowGas", "gasFlow"],
+  pureGas: ["pureGas", "Progress_puregas", "pure_gas"],
+  rawGas: ["rawGas", "Progress_rawgas", "raw_gas"],
+  pressure_A: ["pressure_A", "PRESSURE_A", "pressureA"],
+  pressure_B: ["pressure_B", "PRESSURE_B", "pressureB"],
+};
+
+function toNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const normalized = value.replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+    if (normalized) {
+      const parsed = Number(normalized[0]);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
+function readAliasedNumber(source, key) {
+  for (const alias of SENSOR_ALIASES[key]) {
+    if (Object.prototype.hasOwnProperty.call(source, alias)) {
+      const value = toNumber(source[alias]);
+      if (value !== null) return value;
+    }
+  }
+  return null;
+}
+
+function parseSerialLine(line) {
+  try {
+    return JSON.parse(line);
+  } catch {
+    const numericLine = new RegExp("^\\s*-?\\d+(?:[.,]\\d+)?\\s*\x24").test(line);
+    const flowMatch = line.match(new RegExp("\\bFlow\\s*:\\s*(-?\\d+(?:[.,]\\d+)?)", "i"));
+    if (!numericLine && !flowMatch) return null;
+
+    const value = flowMatch ? toNumber(flowMatch[1]) : toNumber(line);
+    return value === null ? null : { lpmWater: value };
+  }
+}
+
+function normalizeSensorData(rawData) {
+  const previous = lastData || DEFAULT_SENSOR_DATA;
+  const next = { ...previous };
+
+  if (typeof rawData === "number") {
+    next.lpmWater = rawData;
+    return next;
+  }
+
+  if (!rawData || typeof rawData !== "object" || Array.isArray(rawData)) {
+    return null;
+  }
+
+  let hasValue = false;
+  for (const key of Object.keys(DEFAULT_SENSOR_DATA)) {
+    const value = readAliasedNumber(rawData, key);
+    if (value !== null) {
+      next[key] = value;
+      hasValue = true;
+    }
+  }
+
+  return hasValue ? next : null;
+}
 
 function initSerial() {
   try {
@@ -43,14 +121,23 @@ function initSerial() {
     });
 
     parser.on("data", (rawData) => {
+      const line = rawData.trim();
+      if (!line) return;
+
       try {
-        const jsonData = JSON.parse(rawData.trim());
-        lastData = jsonData;
+        const parsedData = parseSerialLine(line);
+        const sensorData = normalizeSensorData(parsedData);
+        if (!sensorData) {
+          console.warn("⚠️  Format data serial tidak dikenali:", line);
+          return;
+        }
+
+        lastData = sensorData;
         // Broadcast ke semua client yang terhubung
-        io.emit("serialdata", jsonData);
-        console.log("📡 Data:", JSON.stringify(jsonData));
+        io.emit("serialdata", sensorData);
+        console.log("📡 Data:", JSON.stringify(sensorData));
       } catch (error) {
-        console.warn("⚠️  Gagal parse JSON:", rawData.trim());
+        console.warn("⚠️  Gagal proses data serial:", line, error.message);
       }
     });
 

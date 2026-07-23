@@ -67,7 +67,7 @@ module.exports = {
       env: {
         PORT: "3001",
         SERIAL_PORT: "/dev/ttyUSB0",      // Ganti sesuai port Arduino
-        BAUD_RATE: "9600",
+        BAUD_RATE: "115200",
       },
       restart_delay: 5000,
       log_date_format: "YYYY-MM-DD HH:mm:ss",
